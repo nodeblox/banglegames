@@ -28,8 +28,6 @@ const pool = mysql.createPool({
       )
     `);
 
-    console.log("Table 'groups' checked/created.");
-
     await connection.query(`
       CREATE TABLE IF NOT EXISTS users (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -40,7 +38,23 @@ const pool = mysql.createPool({
       )
     `);
 
-    console.log("Table 'users' checked/created.");
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS health_data (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        user_id INT,
+        pulse INT,
+        steps INT,
+        distance INT,
+        calories INT,
+        curls INT,
+        shoulder_press INT,
+        bench_press INT,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    console.log("Tables 'groups', 'users', and 'health_data' checked/created.");
     connection.release();
   } catch (err) {
     console.error("MariaDB connection failed:", err.message);

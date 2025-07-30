@@ -170,13 +170,61 @@ app.post("/create-user", async (req, res) => {
           path.join(__dirname, "dash", "post_user_create.html"),
           "utf-8"
         );
-        return res.status(200).send(template.replace("{{API_KEY}}", groupId));
+        return res.status(200).send(template.replace("{{API_KEY}}", apiKey));
       }
     } catch (error) {
       console.error("Error creating user:", error);
       return res.status(500).json({ success: false, message: "Server error" });
     }
   });
+});
+
+app.post("/api/health/push", async (req, res) => {
+  const {
+    api_key,
+    pulse,
+    steps,
+    distance,
+    calories,
+    curls,
+    shoulder_press,
+    bench_press,
+  } = req.body;
+  if (!api_key) {
+    return res
+      .status(400)
+      .json({ success: false, message: "api_key required" });
+  }
+  try {
+    const [userRows] = await db.query(
+      "SELECT id FROM users WHERE api_key = ?",
+      [api_key]
+    );
+    if (userRows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    const user_id = userRows[0].id;
+    await db.query(
+      `INSERT INTO health_data (user_id, pulse, steps, distance, calories, curls, shoulder_press, bench_press)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        user_id,
+        pulse ?? null,
+        steps ?? null,
+        distance ?? null,
+        calories ?? null,
+        curls ?? null,
+        shoulder_press ?? null,
+        bench_press ?? null,
+      ]
+    );
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Error in /api/health/push:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
 });
 
 // Logout-Route
