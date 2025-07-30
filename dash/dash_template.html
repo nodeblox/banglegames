@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>BangleGames | Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/assets/dashboard.css" />
+    <style>
+      .user-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 24px 0;
+        background: #fff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      }
+      .user-table th,
+      .user-table td {
+        padding: 12px 8px;
+        text-align: center;
+      }
+      .user-table th {
+        background: #0984e3;
+        color: #fff;
+        font-weight: 600;
+      }
+      .user-table tr:nth-child(even) {
+        background: #f1f2f6;
+      }
+      .user-table tr:hover {
+        background: #dfe6e9;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="navbar-left">
+        <span class="group-name">{{groupName}}</span>
+      </div>
+      <div class="navbar-center">
+        <div class="categories">
+          <a class="category-btn">Kategorie 1</a>
+          <a class="category-btn">Kategorie 2</a>
+          <a class="category-btn">Kategorie 3</a>
+        </div>
+      </div>
+      <div class="navbar-right">
+        <button id="createUserBtn" class="nav-btn">Create New User</button>
+        <button id="logoutBtn" class="nav-btn">Logout</button>
+      </div>
+    </nav>
+    <div class="dashboard-container">
+      <!-- Dashboard-Inhalt hier -->
+      <h2>Willkommen im Dashboard!</h2>
+      <div class="main-category">{{userTable}}</div>
+    </div>
+    <div class="createUserModal" id="createUserModal">
+      <div class="modal-content">
+        <h3>Neuen Benutzer erstellen</h3>
+        <form id="createUserForm" action="/create-user" method="POST">
+          <input
+            type="text"
+            id="user_input"
+            name="user_input"
+            placeholder="Nickname / API-Key"
+            required
+          />
+          <button type="submit">Erstellen</button>
+        </form>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          height="50px"
+          viewBox="0 -960 960 960"
+          width="50px"
+          fill="#ff3333"
+          class="close-btn"
+          onclick="document.getElementById('createUserModal').classList.remove('active')"
+        >
+          <path
+            d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"
+          />
+        </svg>
+      </div>
+    </div>
+    <script src="/assets/dashboard.js"></script>
+  </body>
+</html>

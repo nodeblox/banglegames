@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BangleGames | User created!</title>
+    <link rel="stylesheet" href="/assets/post_user_create.css" />
+  </head>
+  <body>
+    <h1>User created successfully!</h1>
+    <p>Your user has been created and is now part of the group.</p>
+    <h2>
+      Your API Key:
+      <span id="api-key" onclick="copyToClipboard(this)">{{API_KEY}}</span>
+    </h2>
+    <a href="/dash">← Go to Dashboard</a>
+    <script>
+      function copyToClipboard(element) {
+        const apiKey = element.textContent;
+        navigator.clipboard
+          .writeText(apiKey)
+          .then(() => {
+            element.style.color = "#4CAF50"; // Change color to green
+          })
+          .catch((err) => {
+            console.error("Failed to copy API Key: ", err);
+          });
+      }
+    </script>
+  </body>
+</html>

@@ -85,7 +85,7 @@
             >
               <input
                 class="input100"
-                type="password"
+                type="text"
                 name="pass"
                 placeholder="Password"
                 required
@@ -149,8 +149,7 @@
             .then((response) => response.json())
             .then((data) => {
               if (data.success) {
-                alert("Login successful!");
-                // Redirect to dashboard or main page
+                // Kein JWT im LocalStorage speichern, nur Weiterleitung
                 window.location.href = "/dash";
               } else {
                 alert("Invalid password");
@@ -162,5 +161,7 @@
             });
         });
     </script>
+  </body>
+</html>
   </body>
 </html>
