@@ -5,46 +5,19 @@
     <title>BangleGames | Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="/assets/dashboard.css" />
-    <style>
-      .user-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 24px 0;
-        background: #fff;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-      }
-      .user-table th,
-      .user-table td {
-        padding: 12px 8px;
-        text-align: center;
-      }
-      .user-table th {
-        background: #0984e3;
-        color: #fff;
-        font-weight: 600;
-      }
-      .user-table tr:nth-child(even) {
-        background: #f1f2f6;
-      }
-      .user-table tr:hover {
-        background: #dfe6e9;
-      }
-    </style>
   </head>
   <body>
     <nav class="navbar">
       <div class="navbar-left">
         <span class="group-name">{{groupName}}</span>
       </div>
-      <div class="navbar-center">
+      <!--<div class="navbar-center">
         <div class="categories">
           <a class="category-btn">Kategorie 1</a>
           <a class="category-btn">Kategorie 2</a>
           <a class="category-btn">Kategorie 3</a>
         </div>
-      </div>
+      </div>-->
       <div class="navbar-right">
         <button id="createUserBtn" class="nav-btn">Create New User</button>
         <button id="logoutBtn" class="nav-btn">Logout</button>
@@ -53,7 +26,30 @@
     <div class="dashboard-container">
       <!-- Dashboard-Inhalt hier -->
       <h2>Willkommen im Dashboard!</h2>
-      <div class="main-category">{{userTable}}</div>
+      <div class="main-category">
+        <div class="table-container">
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th onclick="sortTable(this)">Nutzername</th>
+                <th onclick="sortTable(this)">Puls</th>
+                <th onclick="sortTable(this)">AVG Puls</th>
+                <th onclick="sortTable(this)">Schritte</th>
+                <th onclick="sortTable(this)">Distanz</th>
+                <th onclick="sortTable(this)">Kalorien</th>
+                <th onclick="sortTable(this)">Curls</th>
+                <th onclick="sortTable(this)">Shoulder Press</th>
+                <th onclick="sortTable(this)">Bench Press</th>
+              </tr>
+            </thead>
+            <tbody id="user-table-body">
+              <tr>
+                <td colspan="9" style="text-align: center">Lade Daten ...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
     <div class="createUserModal" id="createUserModal">
       <div class="modal-content">

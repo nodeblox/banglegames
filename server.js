@@ -273,6 +273,89 @@ app.post("/api/auth/one-time-code", (req, res) => {
   }
 });
 
+app.get("/api/group/users-stats", async (req, res) => {
+  const token = req.cookies.jwt;
+  if (!token) return res.json({ success: false, message: "Unauthorized" });
+  jwt.verify(token, JWT_SECRET, async (err, decoded) => {
+    if (err) return res.json({ success: false, message: "Unauthorized" });
+    try {
+      const [groupRows] = await db.query(
+        "SELECT users FROM groups WHERE id = ?",
+        [decoded.groupId]
+      );
+      if (!groupRows.length || !groupRows[0].users) {
+        return res.json({ success: true, users: [] });
+      }
+      const userIds = JSON.parse(groupRows[0].users || "[]");
+      if (!userIds.length) return res.json({ success: true, users: [] });
+
+      // Hole alle Usernamen
+      const [users] = await db.query(
+        `SELECT id, nickname FROM users WHERE id IN (${userIds
+          .map(() => "?")
+          .join(",")})`,
+        userIds
+      );
+
+      // Aggregiere Healthdaten: latest_pulse (neuester Wert), avg_pulse (Durchschnitt), Rest summiert
+      // 1. Neuesten Puls pro User holen
+      const [latestPulseRows] = await db.query(
+        `SELECT t1.user_id, t1.pulse
+         FROM health_data t1
+         INNER JOIN (
+           SELECT user_id, MAX(ts) as max_ts
+           FROM health_data
+           WHERE user_id IN (${userIds.map(() => "?").join(",")})
+           GROUP BY user_id
+         ) t2 ON t1.user_id = t2.user_id AND t1.ts = t2.max_ts`,
+        userIds
+      );
+      const latestPulseMap = {};
+      for (const row of latestPulseRows) {
+        latestPulseMap[row.user_id] = row.pulse;
+      }
+
+      // 2. Durchschnitt und Summen pro User holen
+      const [aggRows] = await db.query(
+        `SELECT user_id,
+            AVG(pulse) as avg_pulse,
+            SUM(steps) as steps,
+            SUM(distance) as distance,
+            SUM(calories) as calories,
+            SUM(curls) as curls,
+            SUM(shoulder_press) as shoulder_press,
+            SUM(bench_press) as bench_press
+         FROM health_data
+         WHERE user_id IN (${userIds.map(() => "?").join(",")})
+         GROUP BY user_id`,
+        userIds
+      );
+      const aggMap = {};
+      for (const row of aggRows) {
+        aggMap[row.user_id] = row;
+      }
+
+      // Mappe Userdaten und Healthdaten zusammen
+      const result = users.map((u) => ({
+        nickname: u.nickname,
+        latest_pulse: latestPulseMap[u.id] ?? null, // null = kein Wert vorhanden
+        avg_pulse: aggMap[u.id]?.avg_pulse ?? null, // null = kein Wert vorhanden
+        steps: aggMap[u.id]?.steps ?? 0, // 0 = Summe, sinnvoll als Default
+        distance: aggMap[u.id]?.distance ?? 0,
+        calories: aggMap[u.id]?.calories ?? 0,
+        curls: aggMap[u.id]?.curls ?? 0,
+        shoulder_press: aggMap[u.id]?.shoulder_press ?? 0,
+        bench_press: aggMap[u.id]?.bench_press ?? 0,
+      }));
+
+      res.json({ success: true, users: result });
+    } catch (e) {
+      console.error("Error in /api/group/users-stats:", e);
+      res.json({ success: false, message: "Server error" });
+    }
+  });
+});
+
 // Error handling
 app.use((err, req, res, next) => {
   console.error(err.stack);
