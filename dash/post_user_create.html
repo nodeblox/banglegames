@@ -13,6 +13,24 @@
       Your API Key:
       <span id="api-key" onclick="copyToClipboard(this)">{{API_KEY}}</span>
     </h2>
+    <p class="explanation">
+      <strong>Important:</strong> Keep your API Key secret! Do not share it with
+      others.<br />
+      You can not show this key again, so make sure to copy it now.
+      <br />
+      If you lose it, you will need to create a new user to get a new API Key.
+      <br />
+      You can also generate a <strong>one-time code</strong> for secure,
+      temporary authentication. This code is valid for 5 minutes and can only be
+      used once.
+    </p>
+    <button id="get-onetime-code-btn">Generate One-Time Code</button>
+    <div id="onetime-code-section" style="margin-top: 10px; display: none">
+      <span>Your one-time code: <strong id="onetime-code"></strong></span>
+      <p style="font-size: 0.95em; color: #888">
+        This code is valid for 5 minutes and can only be used once.
+      </p>
+    </div>
     <a href="/dash">← Go to Dashboard</a>
     <script>
       function copyToClipboard(element) {
@@ -26,6 +44,24 @@
             console.error("Failed to copy API Key: ", err);
           });
       }
+
+      document
+        .getElementById("get-onetime-code-btn")
+        .addEventListener("click", function () {
+          const apiKey = document.getElementById("api-key").textContent;
+          fetch(`/api/auth/one-time-code?api_key=${encodeURIComponent(apiKey)}`)
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.success && data.code) {
+                document.getElementById("onetime-code").textContent = data.code;
+                document.getElementById("onetime-code-section").style.display =
+                  "block";
+              } else {
+                alert("Failed to generate one-time code.");
+              }
+            })
+            .catch(() => alert("Failed to generate one-time code."));
+        });
     </script>
   </body>
 </html>

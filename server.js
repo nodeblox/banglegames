@@ -237,6 +237,42 @@ app.post("/logout", (req, res) => {
   res.json({ success: true });
 });
 
+// In-Memory Store für One-Time-Codes
+const oneTimeCodes = new Map();
+
+// GET: /api/auth/one-time-code?api_key=...
+app.get("/api/auth/one-time-code", (req, res) => {
+  const apiKey = req.query.api_key;
+  if (!apiKey) {
+    return res
+      .status(400)
+      .json({ success: false, message: "api_key required" });
+  }
+  // 4-stelliger Code generieren
+  const code = Math.floor(1000 + Math.random() * 9000).toString();
+  oneTimeCodes.set(code, {
+    apiKey,
+    timeout: setTimeout(() => oneTimeCodes.delete(code), 5 * 60 * 1000),
+  });
+  res.json({ success: true, code });
+});
+
+// POST: /api/auth/one-time-code { code }
+app.post("/api/auth/one-time-code", (req, res) => {
+  const { code } = req.body;
+  if (!code) {
+    return res.status(400).json({ success: false, message: "code required" });
+  }
+  const entry = oneTimeCodes.get(code.toString());
+  if (entry) {
+    clearTimeout(entry.timeout);
+    oneTimeCodes.delete(code);
+    return res.json({ success: true, api_key: entry.apiKey });
+  } else {
+    return res.json({ success: false });
+  }
+});
+
 // Error handling
 app.use((err, req, res, next) => {
   console.error(err.stack);
