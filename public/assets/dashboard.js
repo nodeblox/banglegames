@@ -11,6 +11,7 @@ document.getElementById("createUserBtn").addEventListener("click", function () {
 
 let sortDirection = false;
 let currentSortColumnTh = null;
+let currentPeriod = "all";
 
 function sortTable(tableTh) {
   currentSortColumnTh = tableTh;
@@ -42,9 +43,9 @@ function sortTable(tableTh) {
   rows.forEach((row) => tbody.appendChild(row));
 }
 
-async function fetchUserStats() {
+async function fetchUserStats(period = "all") {
   try {
-    const res = await fetch("/api/group/users-stats");
+    const res = await fetch(`/api/group/users-stats?period=${period}`);
     const data = await res.json();
     const tbody = document.getElementById("user-table-body");
     if (
@@ -81,5 +82,22 @@ async function fetchUserStats() {
     throw new Error("Fehler beim Abrufen der Nutzerdaten: " + e.message);
   }
 }
-fetchUserStats();
-setInterval(fetchUserStats, 15000);
+
+// Kategorie-Buttons in Navbar
+document.querySelectorAll(".navbar .category-btn").forEach((btn) => {
+  btn.addEventListener("click", function (e) {
+    e.preventDefault();
+    document
+      .querySelectorAll(".navbar .category-btn")
+      .forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentPeriod = btn.getAttribute("data-period");
+    fetchUserStats(currentPeriod);
+  });
+});
+
+// Initial: Gesamt aktiv
+document.getElementById("catAll").classList.add("active");
+
+fetchUserStats(currentPeriod);
+setInterval(() => fetchUserStats(currentPeriod), 15000);

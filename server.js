@@ -289,6 +289,43 @@ app.get("/api/group/users-stats", async (req, res) => {
       const userIds = JSON.parse(groupRows[0].users || "[]");
       if (!userIds.length) return res.json({ success: true, users: [] });
 
+      // Zeitraum bestimmen
+      const period = req.query.period || "all";
+      let whereTs = "";
+      let params = [...userIds];
+
+      if (period === "month") {
+        // Aktueller Monat: 1. bis letzter Tag
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        const firstDay = `${year}-${month
+          .toString()
+          .padStart(2, "0")}-01 00:00:00`;
+        const lastDayDate = new Date(year, month, 0); // letzter Tag des Monats
+        const lastDay = `${year}-${month
+          .toString()
+          .padStart(2, "0")}-${lastDayDate
+          .getDate()
+          .toString()
+          .padStart(2, "0")} 23:59:59`;
+        whereTs = "AND ts >= ? AND ts <= ?";
+        params.push(firstDay, lastDay);
+      } else if (period === "week") {
+        // Aktuelle Woche: Montag bis Sonntag
+        const now = new Date();
+        const dayOfWeek = now.getDay() === 0 ? 7 : now.getDay(); // Sonntag = 7
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - dayOfWeek + 1);
+        monday.setHours(0, 0, 0, 0);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
+        const firstDay = monday.toISOString().slice(0, 19).replace("T", " ");
+        const lastDay = sunday.toISOString().slice(0, 19).replace("T", " ");
+        whereTs = "AND ts >= ? AND ts <= ?";
+        params.push(firstDay, lastDay);
+      }
       // Hole alle Usernamen
       const [users] = await db.query(
         `SELECT id, nickname FROM users WHERE id IN (${userIds
@@ -299,25 +336,18 @@ app.get("/api/group/users-stats", async (req, res) => {
 
       // Aggregiere Healthdaten: latest_pulse (neuester Wert), avg_pulse (Durchschnitt), Rest summiert
       // 1. Neuesten Puls pro User holen
-      const [latestPulseRows] = await db.query(
-        `SELECT t1.user_id, t1.pulse
-         FROM health_data t1
-         INNER JOIN (
-           SELECT user_id, MAX(ts) as max_ts
-           FROM health_data
-           WHERE user_id IN (${userIds.map(() => "?").join(",")})
-           GROUP BY user_id
-         ) t2 ON t1.user_id = t2.user_id AND t1.ts = t2.max_ts`,
-        userIds
-      );
-      const latestPulseMap = {};
-      for (const row of latestPulseRows) {
-        latestPulseMap[row.user_id] = row.pulse;
-      }
-
-      // 2. Durchschnitt und Summen pro User holen
-      const [aggRows] = await db.query(
-        `SELECT user_id,
+      let latestPulseQuery = `
+        SELECT t1.user_id, t1.pulse
+        FROM health_data t1
+        INNER JOIN (
+          SELECT user_id, MAX(ts) as max_ts
+          FROM health_data
+          WHERE user_id IN (${userIds.map(() => "?").join(", ")}) ${whereTs}
+          GROUP BY user_id
+        ) t2 ON t1.user_id = t2.user_id AND t1.ts = t2.max_ts
+      `;
+      let aggQuery = `
+        SELECT user_id,
             AVG(pulse) as avg_pulse,
             SUM(steps) as steps,
             SUM(distance) as distance,
@@ -326,10 +356,17 @@ app.get("/api/group/users-stats", async (req, res) => {
             SUM(shoulder_press) as shoulder_press,
             SUM(bench_press) as bench_press
          FROM health_data
-         WHERE user_id IN (${userIds.map(() => "?").join(",")})
-         GROUP BY user_id`,
-        userIds
-      );
+         WHERE user_id IN (${userIds.map(() => "?").join(", ")}) ${whereTs}
+         GROUP BY user_id
+      `;
+
+      const [latestPulseRows] = await db.query(latestPulseQuery, params);
+      const latestPulseMap = {};
+      for (const row of latestPulseRows) {
+        latestPulseMap[row.user_id] = row.pulse;
+      }
+
+      const [aggRows] = await db.query(aggQuery, params);
       const aggMap = {};
       for (const row of aggRows) {
         aggMap[row.user_id] = row;
@@ -338,9 +375,9 @@ app.get("/api/group/users-stats", async (req, res) => {
       // Mappe Userdaten und Healthdaten zusammen
       const result = users.map((u) => ({
         nickname: u.nickname,
-        latest_pulse: latestPulseMap[u.id] ?? null, // null = kein Wert vorhanden
-        avg_pulse: aggMap[u.id]?.avg_pulse ?? null, // null = kein Wert vorhanden
-        steps: aggMap[u.id]?.steps ?? 0, // 0 = Summe, sinnvoll als Default
+        latest_pulse: latestPulseMap[u.id] ?? null,
+        avg_pulse: aggMap[u.id]?.avg_pulse ?? null,
+        steps: aggMap[u.id]?.steps ?? 0,
         distance: aggMap[u.id]?.distance ?? 0,
         calories: aggMap[u.id]?.calories ?? 0,
         curls: aggMap[u.id]?.curls ?? 0,
