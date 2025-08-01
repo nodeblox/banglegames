@@ -64,7 +64,7 @@ async function fetchUserStats() {
               <td>${u.latest_pulse ?? "-"}</td>
               <td>${u.avg_pulse ? parseFloat(u.avg_pulse).toFixed(1) : "-"}</td>
               <td>${u.steps ?? 0}</td>
-              <td>${u.distance ?? 0}</td>
+              <!--<td>${u.distance ?? 0}</td>-->
               <td>${u.calories ?? 0}</td>
               <td>${u.curls ?? 0}</td>
               <td>${u.shoulder_press ?? 0}</td>
